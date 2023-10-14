@@ -1,29 +1,29 @@
-const { MongoClient } = require("mongodb");
+const mongoose = require('mongoose');
 const express = require("express");
 const app = express();
 const port = 8000;
-
-const url = "mongodb://localhost:27017";
 const databaseName = "AssessmentDatabase";
+const userRouter = require("./controllers/userController");
+const cityRouter = require('./controllers/cityController');
+const countryRouter = require('./controllers/countryController');
 
-const client = new MongoClient(url, { useUnifiedTopology: true });
-const user = require("./models/User");
-const country = require("./models/Country");
-const city = require("./models/City");
-const state = require("./models/State");
 const startApp = async () => {
   try {
-    await client.connect();
-    const db = client.db(databaseName);
-    console.log(`Connected to the "${databaseName}" database`);
+    const dbURI = `mongodb://localhost/${databaseName}`;
+
+    mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true });
+    const db = mongoose.connection;
+    db.on('connected', () => {
+      console.log(`Connected to the database: ${dbURI}`);
+    });
+    app.use(express.json())
+    app.use('/api/users', userRouter);
+    app.use('/api/city', cityRouter);
+    app.use('/api/country', countryRouter);
     app.listen(port, () => {
       console.log(`Server is running on http://localhost:${port}`);
     });
-    app.use(user);
-    app.use(country);
-    app.use(city);
-    app.use(state);
-    
+
   } catch (err) {
     console.error(err);
   }
