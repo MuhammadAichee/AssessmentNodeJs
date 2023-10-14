@@ -5,8 +5,8 @@ const validateUser = [
     check('email').notEmpty().withMessage('Email is required'),
     check('email').isEmail().withMessage('Invalid email format'),
     check('country').notEmpty().withMessage('Country is required'),
-    // check('state').notEmpty().withMessage('State is required'),
-    // check('city').notEmpty().withMessage('City is required'), 
+    check('state').notEmpty().withMessage('State is required'),
+    check('city').notEmpty().withMessage('City is required'), 
   ];
 
 module.exports = validateUser;  

@@ -4,6 +4,8 @@ const { validationResult } = require("express-validator");
 const User = require("../models/User");
 const Country = require("../models/Country");
 const City = require("../models/City");
+const State = require("../models/State");
+
 const UserValidator = require("../validators/UserValidators");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -38,7 +40,7 @@ userRouter.get("/", authenticateUser, async (req, res) => {
     }
     if (state) {
       const stateObject = await State.findOne({ name: state });
-      if (stateObject) query.city = stateObject._id;
+      if (stateObject) query.state = stateObject._id;
     }
     const sort = {};
     if (sortBy && sortOrder) {
@@ -52,10 +54,15 @@ userRouter.get("/", authenticateUser, async (req, res) => {
     }
 
     const users = await User.find(query)
+      .populate("country", "name")
+      .populate("city", "name")
+      .populate("state", "name")
       .sort(sort)
       .skip(skip)
       .limit(parseInt(defaultLimit));
-    res.status(200).json({ users: users });
+
+    const count = await User.find(query);
+    res.status(200).json({ users: users, count: count.length });
   } catch (err) {
     console.log(err);
     res.status(500).json({ error: "" });
@@ -68,7 +75,9 @@ userRouter.post("/", UserValidator, async (req, res) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    const { username, email, password, country, confirmPassword } = req.body;
+    console.log(req.body);
+    const { username, email, password, country, confirmPassword, state, city } =
+      req.body;
     if (!confirmPassword || password !== confirmPassword) {
       return res
         .status(400)
@@ -78,17 +87,27 @@ userRouter.post("/", UserValidator, async (req, res) => {
     if (!findCountry) {
       return res.status(400).json({ errors: "Invalid Country" });
     }
-    console.log(findCountry);
+    const findState = await State.findOne({ name: state });
+    if (!findState) {
+      return res.status(400).json({ errors: "Invalid State" });
+    }
+    const findCity = await City.findOne({ name: city });
+    if (!findCity) {
+      return res.status(400).json({ errors: "Invalid City" });
+    }
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = new User({
       username,
       email,
       password: hashedPassword,
       country: findCountry._id,
+      state: findState._id,
+      city: findCity._id,
     });
     const savedUser = await user.save();
     return res.status(201).json(savedUser);
   } catch (err) {
+    console.log(err);
     return res.status(500).json({ error: err });
   }
 });
@@ -125,25 +144,40 @@ userRouter.put("/:id", authenticateUser, UserValidator, async (req, res) => {
   }
   if (!req.params.id)
     return res.status(400).json({ error: "Please provide user ID" });
-  const { email, country, city } = req.body;
+  const { email, country, city, state } = req.body;
+  console.log(req.body)
   const user = await User.findById(new ObjectId(req.params.id));
+  console.log(user)
   if (!user) {
     return res.status(401).json({ errors: "User not found" });
   }
 
-  const findCountry = await Country.find({ name: country });
+  const findCountry = await Country.findOne({ name: country });
   if (!findCountry) {
     return res.status(401).json({ error: "Country not found" });
   }
-  const findCity = await City.find({ name: city, country: findCountry._id });
+  const findCity = await City.findOne({ name: city, country: findCountry._id });
+  console.log(findCity)
   if (!findCity) {
     return res
       .status(401)
       .json({ error: "City not found related to provided country" });
   }
+  const findState = await State.findOne({ name: state, country: findCountry._id });
+  console.log(findState)
+  if (!findState) {
+    return res
+      .status(401)
+      .json({ error: "State not found related to provided country" });
+  }
   const updatedUser = await User.findByIdAndUpdate(
     user._id,
-    { country: findCountry._id, city: findCity._id, email: email },
+    {
+      country: findCountry._id,
+      city: findCity._id,
+      state: findState._id,
+      email: email,
+    },
     { new: true }
   );
   return res.status(200).json(updatedUser);

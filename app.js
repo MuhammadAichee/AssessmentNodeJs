@@ -7,6 +7,7 @@ const databaseName = "AssessmentDatabase";
 const userRouter = require("./controllers/userController");
 const cityRouter = require('./controllers/cityController');
 const countryRouter = require('./controllers/countryController');
+const stateRouter = require('./controllers/stateController');
 
 const startApp = async () => {
   try {
@@ -21,6 +22,7 @@ const startApp = async () => {
     app.use(express.json())
     app.use('/api/users', userRouter);
     app.use('/api/city', cityRouter);
+    app.use('/api/state', stateRouter);
     app.use('/api/country', countryRouter);
     app.listen(port, () => {
       console.log(`Server is running on http://localhost:${port}`);

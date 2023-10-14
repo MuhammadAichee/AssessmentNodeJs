@@ -21,16 +21,16 @@ const userSchema = new mongoose.Schema({
     ref: "Country",
     required: true
   },
-  // city: {
-  //   type: mongoose.Schema.Types.ObjectId,
-  //   ref: "City",
-  //   required: true
-  // },
-  // state: {
-  //   type: mongoose.Schema.Types.ObjectId,
-  //   ref: "State",
-  //   required: true
-  // },
+  city: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "City",
+    required: true
+  },
+  state: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "State",
+    required: true
+  },
 });
 
 const User = mongoose.model("User", userSchema);
