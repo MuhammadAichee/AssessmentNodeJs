@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const express = require("express");
+const cors = require('cors');
 const app = express();
 const port = 8000;
 const databaseName = "AssessmentDatabase";
@@ -16,6 +17,7 @@ const startApp = async () => {
     db.on('connected', () => {
       console.log(`Connected to the database: ${dbURI}`);
     });
+    app.use(cors());
     app.use(express.json())
     app.use('/api/users', userRouter);
     app.use('/api/city', cityRouter);
