@@ -1,7 +1,10 @@
 const mongoose = require("mongoose");
 
 const stateSchema = new mongoose.Schema({
-  name : String,
+  name : {
+    type: String,
+    unique: true
+  },
   country: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Country",
