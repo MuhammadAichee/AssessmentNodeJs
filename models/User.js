@@ -1,9 +1,11 @@
 const mongoose = require("mongoose");
+const bcrypt = require('bcrypt');
 
 const userSchema = new mongoose.Schema({
   username: {
     type : String,
-    required : true
+    required : true,
+    unique: true,
   },
   email: {
     type: String,
@@ -19,31 +21,17 @@ const userSchema = new mongoose.Schema({
     ref: "Country",
     required: true
   },
-  city: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "City",
-    required: true
-  },
-  state: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "State",
-    required: true
-  },
+  // city: {
+  //   type: mongoose.Schema.Types.ObjectId,
+  //   ref: "City",
+  //   required: true
+  // },
+  // state: {
+  //   type: mongoose.Schema.Types.ObjectId,
+  //   ref: "State",
+  //   required: true
+  // },
 });
 
-userSchema.pre("save", async function(next) {
-  const user = this;
-  if(!user.isModified("password")) return next;
-
-  try{
-    const salt = await bcrypt.genSalt(100);
-    const encryptedPassword = await bcrypt.hash(user.password, salt);
-    user.password = encryptedPassword;
-    next();
-  }
-  catch(err){
-    return next(err);
-  }
-})
 const User = mongoose.model("User", userSchema);
 module.exports = User;
