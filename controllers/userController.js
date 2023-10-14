@@ -10,9 +10,56 @@ const jwt = require("jsonwebtoken");
 const { ObjectId } = require("mongodb");
 const authenticateUser = require("../middleware/authenticationMiddleware");
 
-userRouter.get("/", async (req, res) => {
-  const users = await User.find();
-  res.status(200).json({ users: users });
+userRouter.get("/", authenticateUser, async (req, res) => {
+  try {
+    const { search, country, city, state, page, limit, sortBy, sortOrder } =
+      req.query;
+
+    const query = {};
+
+    if (search && search.length > 0) {
+      query.$or = [
+        {
+          username: { $regex: search, $options: "i" },
+        },
+        {
+          email: { $regex: search, $options: "i" },
+        },
+      ];
+    }
+    if (country) {
+      const countryObject = await Country.findOne({ name: country });
+      console.log(countryObject);
+      if (countryObject) query.country = countryObject._id;
+    }
+    if (city) {
+      const cityObject = await City.findOne({ name: city });
+      if (cityObject) query.city = cityObject._id;
+    }
+    if (state) {
+      const stateObject = await State.findOne({ name: state });
+      if (stateObject) query.city = stateObject._id;
+    }
+    const sort = {};
+    if (sortBy && sortOrder) {
+      sort[sortBy] = sortOrder === "asc" ? 1 : -1; // 1 for ascending, -1 for descending
+    }
+    let skip = 0;
+    let defaultLimit = 10;
+    if (page && limit && page > 0 && limit > 0) {
+      defaultLimit = limit;
+      skip = (page - 1) * defaultLimit;
+    }
+
+    const users = await User.find(query)
+      .sort(sort)
+      .skip(skip)
+      .limit(parseInt(defaultLimit));
+    res.status(200).json({ users: users });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "" });
+  }
 });
 
 userRouter.post("/", UserValidator, async (req, res) => {
@@ -50,11 +97,13 @@ userRouter.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
   const user = await User.findOne({ username: username });
-  if (!user) return res.status(401).json({ error: "User not found" });
+  if (!user) return res.status(401).json({ error: "Invalid username" });
 
   const matchPassword = await bcrypt.compare(password, user.password);
   if (!matchPassword) {
-    return res.status(401).send({ error: "Incorrect password" });
+    return res
+      .status(401)
+      .send({ error: "Incorrect password. Please try again." });
   }
 
   const token = jwt.sign({ userId: user._id }, "assessment", {
@@ -72,10 +121,10 @@ userRouter.get("/check", authenticateUser, async (req, res) => {
 userRouter.put("/:id", authenticateUser, UserValidator, async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
+    return res.status(400).json({ error: errors.array() });
   }
   if (!req.params.id)
-    return res.status(400).json({ errors: "Please provide user ID" });
+    return res.status(400).json({ error: "Please provide user ID" });
   const { email, country, city } = req.body;
   const user = await User.findById(new ObjectId(req.params.id));
   if (!user) {
@@ -84,13 +133,13 @@ userRouter.put("/:id", authenticateUser, UserValidator, async (req, res) => {
 
   const findCountry = await Country.find({ name: country });
   if (!findCountry) {
-    return res.status(401).json({ errors: "Country not found" });
+    return res.status(401).json({ error: "Country not found" });
   }
   const findCity = await City.find({ name: city, country: findCountry._id });
   if (!findCity) {
     return res
       .status(401)
-      .json({ errors: "City not found related to provided country" });
+      .json({ error: "City not found related to provided country" });
   }
   const updatedUser = await User.findByIdAndUpdate(
     user._id,
@@ -102,10 +151,10 @@ userRouter.put("/:id", authenticateUser, UserValidator, async (req, res) => {
 
 userRouter.delete("/:id", async (req, res) => {
   if (!req.params.id)
-    return res.status(400).json({ errors: "Please provide user ID" });
+    return res.status(400).json({ error: "Please provide user ID" });
   const deletedUser = await User.findByIdAndDelete(new ObjectId(req.params.id));
   if (!deletedUser) {
-    return res.status(401).json({ errors: "Usser not found" });
+    return res.status(401).json({ error: "Usser not found" });
   }
   return res.status(200).json({ "Deleted User": deletedUser });
 });
