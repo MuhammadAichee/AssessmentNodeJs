@@ -4,7 +4,7 @@ const Country = require("./models/Country");
 const State = require("./models/State");
 const User = require("./models/User");
 const City = require("./models/City");
-const databaseName = "AssessmentDatabase";
+const databaseName = "AssessmentDatabaseCheck";
 
 const dbURI = `mongodb://localhost/${databaseName}`;
 mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true });
