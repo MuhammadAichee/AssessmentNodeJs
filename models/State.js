@@ -2,8 +2,10 @@ const mongoose = require("mongoose");
 
 const stateSchema = new mongoose.Schema({
   name : {
-    type: String,
-    unique: true
+    type: String
+  },
+  code : {
+    type: String
   },
   country: {
     type: mongoose.Schema.Types.ObjectId,
