@@ -36,8 +36,10 @@ userRouter.get("/", authenticateUser, async (req, res) => {
       const cityObject = await userService.findCityByName(city);
       if (cityObject) query.city = cityObject._id;
     }
+    console.log(state)
     if (state) {
-      const stateObject = userService.findStateByName(state);
+      const stateObject = await userService.findStateByName(state);
+      console.log(stateObject)
       if (stateObject) query.state = stateObject._id;
     }
     const sort = {};
